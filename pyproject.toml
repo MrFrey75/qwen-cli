@@ -1,42 +1,73 @@
-# pyproject.toml
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "qwen-cli"
 version = "0.1.0"
-description = "A secure, local-first AI assistant built on Qwen"
-authors = [{name = "MrFrey75", email = "mr.frey@example.com"}]
-dependencies = [
-    "requests>=2.31.0",
-    "cryptography>=38.0.0",
-    "spacy>=3.0.0",
-    "python-dateutil>=2.8.0",
-    "vosk>=0.3.30",
-    "whisper.cpp>=0.1.0",
-    "silero>=0.1.0",
-    "pyttsx3>=2.90",
-    "opencv-python>=4.0.0",
-    "ultralytics>=8.0.0",
-    "numpy>=1.21.0"
+description = "A local, secure, AI-powered CLI assistant using Qwen via Ollama"
+authors = [
+    { name = "Your Name", email = "you@example.com" }
 ]
-requires-python = ">=3.9"
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+    "Typing :: Typed"
+]
 
-[project.urls]
-Homepage = "https://github.com/MrFrey75/qwen-cli"
-Repository = "https://github.com/MrFrey75/qwen-cli"
+# Dependencies
+dependencies = [
+    "requests>=2.25.0"
+]
 
-[build-backend]
-build-backend = "setuptools.build_meta"
+[project.scripts]
+qwen = "qwen_cli.__main__:main"
+qwen-test = "pytest:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-qwen_cli = ["*.json", "*.txt"]
+qwen_cli = ["*.md"]
 
-[tool.setuptools.entry_points]
-console_scripts = [
-    "qwen-cli = qwen_cli.__main__:main",
+[tool.setuptools.dynamic]
+version = { attr = "qwen_cli.__version__" }
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "requests-mock>=1.10.0"
+]
+
+# === Pytest Configuration ===
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "-l"
+]
+
+# Optional: Control how warnings are handled
+# By default, pytest shows DeprecationWarning and ResourceWarning
+# Uncomment below to ignore common noisy warnings
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::ResourceWarning",
+    # Example: ignore specific Ollama/connection warnings
+    'ignore::UserWarning:.*connection closed.*',
+    'ignore::ResourceWarning:.*unclosed socket.*'
 ]

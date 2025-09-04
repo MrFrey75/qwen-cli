@@ -1,35 +1,24 @@
-# qwen-cli
+# 🤖 Qwen CLI – Your Local AI Assistant
 
-## Documentation
+> A secure, extensible, personal AI assistant that runs entirely **on your machine**.  
+> No data leaves your device. No cloud. No tracking.
 
-- [README](./README.md)
-- [CHANGELOG](./CHANGELOG.md)
-- [LICENSE](./LICENSE)
-- [Project Docs](./docs/README.md)
-  - [Project Roadmap](./docs/roadmap.md)
+Qwen CLI is a command-line interface powered by **Qwen** via **Ollama**, designed to evolve from a simple CLI into a context-aware, multimodal companion — one safe, verifiable step at a time.
 
-## Source
+Built with:
+- 🔐 **Local-first** – All processing happens on-device
+- 🧩 **Extensible** – Plugin-ready for AI-generated tools
+- 🚦 **Opt-in** – Nothing activates without your consent
+- 📦 **Self-contained** – Works offline with Ollama
 
-- [qwen-cli repo](https://github.com/MrFrey75/qwen-cli.git)
+---
 
-## Local Qwen via Ollama
+## 🚀 Quick Start
 
-This fork is wired to **Ollama** instead of DashScope.
+### 1. Install Dependencies
 
-### Prereqs
-- Install [Ollama](https://ollama.com) and pull a small Qwen model:
-  ```bash
-  ollama pull qwen2.5:1.5b-instruct
-  ```
-- (Optional) set a different base URL:
-  ```bash
-  export OLLAMA_BASE_URL=http://localhost:11434
-  ```
+Install [Ollama](https://ollama.com/download) and run:
 
-### Usage
 ```bash
-pip install -e .
-qwen-cli --init
-qwen-cli "Explain tail recursion"
-qwen-cli --model qwen2.5:1.5b-instruct "Write a pytest for fizzbuzz"
+ollama run qwen:latest
 ```

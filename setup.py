@@ -1,37 +1,54 @@
-# setup.py
-from setuptools import setup, find_packages
+#!/usr/bin/env python3
+"""
+Setup script for qwen-cli.
+This file is kept for backward compatibility with older tools.
+"""
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+from setuptools import setup, find_packages
+import os
+
+# ✅ Read from root README.md (not docs/)
+with open("README.md", "r", encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
     name="qwen-cli",
     version="0.1.0",
-    description="A secure, local-first AI assistant built on Qwen",
+    description="A local, secure, AI-powered CLI assistant using Qwen via Ollama",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="MrFrey75",
-    author_email="mr.frey@example.com",
+    author="Your Name",
+    author_email="you@example.com",
+    license="MIT",
+    url="https://github.com/MrFrey75/Qwen-CLI",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
-        "dashscope>=1.14.0",
-        "cryptography>=38.0.0",
-        "spacy>=3.0.0",
-        "python-dateutil>=2.8.0",
-        "vosk>=0.3.30",
-        "whisper.cpp>=0.1.0",
-        "silero>=0.1.0",
-        "pyttsx3>=2.90",
-        "opencv-python>=4.0.0",
-        "ultralytics>=8.0.0",
-        "numpy>=1.21.0",
+        # Add any runtime deps here later
     ],
-    entry_points={
-        "console_scripts": [
-            "qwen-cli=qwen_cli.__main__:main",
+    extras_require={
+        "test": [
+            "pytest>=7.0",
+            "requests-mock>=1.10.0",
         ],
     },
-    python_requires=">=3.9",
+    entry_points={
+        "console_scripts": [
+            "qwen=qwen_cli.__main__:main",
+        ],
+    },
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Topic :: Utilities",
+    ],
+    python_requires=">=3.10",
     include_package_data=True,
 )
