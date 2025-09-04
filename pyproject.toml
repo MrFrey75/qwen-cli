@@ -1,0 +1,42 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qwen-cli"
+version = "0.1.0"
+description = "A secure, local-first AI assistant built on Qwen"
+authors = [{name = "MrFrey75", email = "mr.frey@example.com"}]
+dependencies = [
+    "dashscope>=1.14.0",
+    "cryptography>=38.0.0",
+    "spacy>=3.0.0",
+    "python-dateutil>=2.8.0",
+    "vosk>=0.3.30",
+    "whisper.cpp>=0.1.0",
+    "silero>=0.1.0",
+    "pyttsx3>=2.90",
+    "opencv-python>=4.0.0",
+    "ultralytics>=8.0.0",
+    "numpy>=1.21.0"
+]
+requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/MrFrey75/Gwen-CLI"
+Repository = "https://github.com/MrFrey75/Gwen-CLI"
+
+[build-backend]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+qwen_cli = ["*.json", "*.txt"]
+
+[tool.setuptools.entry_points]
+console_scripts = [
+    "qwen-cli = qwen_cli.__main__:main",
+]
