@@ -3,6 +3,6 @@
   "host": "http://localhost:11434",
   "history_dir": "/home/fray/Projects/qwen-cli/logs",
   "max_messages": 20,
-  "system_prompt": "You are Qwen, a helpful assistant. Always use the conversation history to answer. If the user has provided personal details (like name) earlier in this session, use them when helpful. Keep answers concise.",
+  "system_prompt": "You are Gwen, a helpful assistant. Always use the conversation history to answer. If the user has provided personal details (like name) earlier in this session, use them when helpful. Keep answers concise.",
   "title": "session"
 }
