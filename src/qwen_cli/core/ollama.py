@@ -7,7 +7,7 @@ file: src/qwen_cli/core/ollama.py
 
 import requests
 import sys
-from typing import Generator, Optional
+from typing import Generator, Optional, List, Dict, Any
 
 
 class OllamaInterface:
@@ -91,5 +91,47 @@ class OllamaInterface:
                         yield obj["response"]
                 except Exception as e:
                     yield f"\n"
+        except requests.RequestException as e:
+            yield f"\n❌ Error: {e}"
+
+    def chat(
+        self,
+        model: str,
+        messages: List[Dict[str, Any]],
+        stream: bool = True,
+    ) -> Generator[str, None, None]:
+        """Chat with the model using /api/chat with message history.
+
+        messages: list of {"role": "system"|"user"|"assistant", "content": str}
+        """
+        try:
+            resp = requests.post(
+                f"{self.host}/api/chat",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "stream": stream,
+                },
+                stream=stream,
+                timeout=60,
+            )
+            if resp.status_code != 200:
+                yield f"\n❌ Chat failed (HTTP {resp.status_code})."
+                return
+
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                try:
+                    data = line.decode("utf-8")
+                    import json
+                    obj = json.loads(data)
+                    # Ollama chat stream emits chunks containing 'message': {'content': ...}
+                    message = obj.get("message") or {}
+                    content = message.get("content")
+                    if content:
+                        yield content
+                except Exception:
+                    yield "\n"
         except requests.RequestException as e:
             yield f"\n❌ Error: {e}"

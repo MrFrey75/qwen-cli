@@ -48,6 +48,7 @@ ollama run qwen:latest
 qwen --help
 qwen --version
 qwen ask "What is Python?"
+qwen chat
 ```
 
 Options:
@@ -55,6 +56,12 @@ Options:
 - `--model` (or `QWEN_MODEL`): choose model, default `qwen:latest`
 - `--host` (or `QWEN_OLLAMA_HOST`): Ollama host, default `http://localhost:11434`
 - `-y/--yes`: auto-confirm model downloads
+
+Interactive chat tips:
+
+- Start chat: `qwen chat`
+- Reset context: type `/reset`
+- Exit: type `/exit`, `:q`, or press Ctrl+D
 
 ## Development Roadmap
 

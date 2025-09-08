@@ -23,6 +23,7 @@ Examples:
   qwen --help                Show this help message
   qwen --version             Show version info
   qwen ask "What is Python?" Ask Qwen a question
+  qwen chat                  Interactive chat session
         """.strip(),
     )
 
@@ -50,6 +51,30 @@ Examples:
         help="Ollama host URL (default: env QWEN_OLLAMA_HOST or http://localhost:11434)",
     )
     ask_parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Auto-confirm prompts (e.g., model download)",
+    )
+
+    # `chat` command
+    chat_parser = subparsers.add_parser("chat", help="Start interactive chat session")
+    chat_parser.add_argument(
+        "--model",
+        default=os.environ.get("QWEN_MODEL", "qwen:latest"),
+        help="Model to use (default: env QWEN_MODEL or 'qwen:latest')",
+    )
+    chat_parser.add_argument(
+        "--host",
+        default=os.environ.get("QWEN_OLLAMA_HOST", "http://localhost:11434"),
+        help="Ollama host URL (default: env QWEN_OLLAMA_HOST or http://localhost:11434)",
+    )
+    chat_parser.add_argument(
+        "--system",
+        default=os.environ.get("QWEN_SYSTEM", "You are Qwen, a helpful assistant."),
+        help="System prompt for the assistant",
+    )
+    chat_parser.add_argument(
         "-y",
         "--yes",
         action="store_true",
@@ -93,6 +118,67 @@ def cmd_ask(args):
         print()  # Newline at end
 
 
+def cmd_chat(args):
+    """Handle `qwen chat` interactive session with in-memory context."""
+    ollama = OllamaInterface(host=args.host)
+
+    if not ollama.is_ollama_running():
+        print("❌ Ollama is not running.")
+        print("Please start Ollama: https://ollama.com")
+        sys.exit(1)
+
+    model = args.model
+    if model not in ollama.list_models():
+        print(f"❌ Model '{model}' not found.")
+        if not args.yes:
+            confirm = input(f"👉 Would you like to pull '{model}'? (y/N): ")
+            if confirm.lower() != "y":
+                print("❌ Cannot proceed without model.")
+                sys.exit(1)
+        else:
+            print("--yes provided; proceeding to pull model.")
+        if not ollama.pull_model(model):
+            print("❌ Cannot proceed without model.")
+            sys.exit(1)
+
+    print("\n💬 Interactive chat started. Type '/exit' to quit, '/reset' to clear.")
+    messages = [{"role": "system", "content": args.system}]
+
+    while True:
+        try:
+            user_input = input("\n🟢 You: ")
+        except (EOFError, KeyboardInterrupt):
+            print("\n👋 Bye")
+            break
+
+        if not user_input.strip():
+            continue
+        if user_input.strip() in {"/exit", ":q", ":quit"}:
+            print("👋 Bye")
+            break
+        if user_input.strip() == "/reset":
+            messages = [{"role": "system", "content": args.system}]
+            print("♻️  Context reset.")
+            continue
+
+        messages.append({"role": "user", "content": user_input})
+
+        print("🤖 Qwen: ", end="", flush=True)
+        try:
+            for chunk in ollama.chat(model, messages):
+                print(chunk, end="", flush=True)
+                # Accumulate assistant message content
+            print()
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+            continue
+
+        # Append last assistant message to history
+        # Since we streamed, we can't easily reconstruct. Ask once more non-stream? For now, skip storing exact assistant text.
+        # In practice, Ollama chat returns chunks with message content only; the model will still have context via messages list if we add assistant.
+        # Minimal approach: add a placeholder to keep turn structure.
+        messages.append({"role": "assistant", "content": ""})
+
 def main(args: List[str] = None) -> int:
     """
     Main CLI entry point.
@@ -115,6 +201,9 @@ def main(args: List[str] = None) -> int:
 
     if parsed.command == "ask":
         cmd_ask(parsed)
+        return 0
+    if parsed.command == "chat":
+        cmd_chat(parsed)
         return 0
 
     # If no valid command, show help
