@@ -8,18 +8,24 @@ file: src/qwen_cli/core/ollama.py
 import requests
 import sys
 from typing import Generator, Optional, List, Dict, Any
+from .logger import get_logger
 
 
 class OllamaInterface:
     def __init__(self, host: str = "http://localhost:11434"):
         self.host = host
+        self._log = get_logger("qwen.ollama")
 
     def is_ollama_running(self) -> bool:
         """Check if Ollama is reachable."""
         try:
             resp = requests.get(f"{self.host}/api/tags", timeout=5)
-            return resp.status_code == 200
+            ok = resp.status_code == 200
+            if not ok:
+                self._log.warning("Ollama healthcheck failed: HTTP %s", resp.status_code)
+            return ok
         except requests.RequestException:
+            self._log.exception("Failed to reach Ollama at %s", self.host)
             return False
 
     def list_models(self) -> list:
@@ -27,9 +33,12 @@ class OllamaInterface:
         try:
             resp = requests.get(f"{self.host}/api/tags", timeout=10)
             if resp.status_code == 200:
-                return [m.get("name", "") for m in resp.json().get("models", []) if isinstance(m, dict)]
+                models = [m.get("name", "") for m in resp.json().get("models", []) if isinstance(m, dict)]
+                self._log.debug("Available models: %s", models)
+                return models
             return []
         except requests.RequestException:
+            self._log.exception("Error listing models from Ollama")
             return []
 
     def pull_model(self, model: str) -> bool:
@@ -46,6 +55,7 @@ class OllamaInterface:
             )
             if resp.status_code != 200:
                 print(f"❌ Failed to start model pull (HTTP {resp.status_code}).")
+                self._log.error("Pull start failed for %s: HTTP %s", model, resp.status_code)
                 return False
 
             for line in resp.iter_lines():
@@ -53,14 +63,17 @@ class OllamaInterface:
                     try:
                         data = line.decode("utf-8")
                         print(f" → {data}")
+                        self._log.debug("pull %s: %s", model, data)
                     except Exception:
                         print(" → ...")
             return True
         except KeyboardInterrupt:
             print("\n❌ Model pull cancelled by user.")
+            self._log.info("Model pull cancelled by user for %s", model)
             return False
         except requests.RequestException as e:
             print(f"\n❌ Failed to pull model: {e}")
+            self._log.exception("Model pull failed for %s", model)
             return False
 
     def generate(self, model: str, prompt: str, stream: bool = True) -> Generator[str, None, None]:
@@ -78,6 +91,7 @@ class OllamaInterface:
             )
             if resp.status_code != 200:
                 yield f"\n❌ Generation failed (HTTP {resp.status_code})."
+                self._log.error("Generate failed for %s: HTTP %s", model, resp.status_code)
                 return
 
             for line in resp.iter_lines():
@@ -93,6 +107,7 @@ class OllamaInterface:
                     yield f"\n"
         except requests.RequestException as e:
             yield f"\n❌ Error: {e}"
+            self._log.exception("Generate request failed for %s", model)
 
     def chat(
         self,
@@ -117,6 +132,7 @@ class OllamaInterface:
             )
             if resp.status_code != 200:
                 yield f"\n❌ Chat failed (HTTP {resp.status_code})."
+                self._log.error("Chat failed for %s: HTTP %s", model, resp.status_code)
                 return
 
             for line in resp.iter_lines():
@@ -135,3 +151,4 @@ class OllamaInterface:
                     yield "\n"
         except requests.RequestException as e:
             yield f"\n❌ Error: {e}"
+            self._log.exception("Chat request failed for %s", model)

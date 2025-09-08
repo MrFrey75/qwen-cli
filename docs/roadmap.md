@@ -36,20 +36,22 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 
 ---
 
-### 🔜 Phase 2: Session Context
+### 🟢 Phase 2: Session Context
 **Goal**: Maintain short-term memory in one session.
 
 #### Features
 - `qwen chat` starts interactive mode
-- Remembers prior messages in session
-- In-memory only (no disk)
+- Remembers prior messages in session (in-memory only; no disk)
+- Built-in commands: `/reset` to clear context, `/exit`/`:q` to quit
+- Optional system prompt via `--system` or `QWEN_SYSTEM`
 
 #### Success Criteria
 - 5+ turn conversation works
-- Context resets on exit
+- Context resets on exit or `/reset`
 
 #### Status
-- In progress
+- Complete
+- Tested locally with Ollama and Qwen
 
 ---
 

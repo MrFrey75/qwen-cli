@@ -57,6 +57,17 @@ Options:
 - `--host` (or `QWEN_OLLAMA_HOST`): Ollama host, default `http://localhost:11434`
 - `-y/--yes`: auto-confirm model downloads
 
+Chat context and history:
+
+- In-memory context is preserved during the session and used for replies.
+- Name extraction: saying "my name is Alice" helps the model remember in-session.
+- Persistent history (opt-in):
+  - Log a session: `qwen chat --title "project-notes"` (saved to `./logs/project-notes-YYYY-...jsonl`)
+  - Change directory: `--history-dir ./logs`
+  - Disable logging: `--no-log`
+  - Load prior session: `--session ./logs/project-notes-...jsonl`
+  - History size cap: `--max-messages 50` (or `QWEN_MAX_MESSAGES`)
+
 Interactive chat tips:
 
 - Start chat: `qwen chat`
@@ -74,3 +85,10 @@ Interactive chat tips:
 - Ollama not running: ensure `ollama serve` is active and `http://localhost:11434` reachable.
 - Model missing: use `qwen -y ask "..."` to auto-pull or run `ollama run qwen:latest`.
 - Connection issues: check firewall/VPN; set `--host` if Ollama runs on another address.
+
+## Logging
+
+- Central logs: `./logs/qwen-cli.log` (rotating). Configure with env vars:
+  - `QWEN_LOG_DIR` (default `./logs`)
+  - `QWEN_LOG_LEVEL` (`INFO`, `DEBUG`, ...)
+  - `QWEN_LOG_TO_CONSOLE` (`1`/`0`)
