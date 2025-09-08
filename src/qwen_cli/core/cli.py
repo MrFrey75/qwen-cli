@@ -17,6 +17,7 @@ from qwen_cli.commands.ask import cmd_ask
 from qwen_cli.commands.chat import cmd_chat
 from qwen_cli.commands.config_cmd import cmd_config
 from qwen_cli.commands.test_cmd import cmd_test
+from qwen_cli.commands.gui import cmd_gui
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -127,6 +128,9 @@ Examples:
     # `test` command
     subparsers.add_parser("test", help="Run test suite (pytest -v)")
 
+    # `gui` command
+    subparsers.add_parser("gui", help="Launch experimental GUI (PyQt)")
+
     return parser
  
 
@@ -161,6 +165,8 @@ def main(args: List[str] = None) -> int:
         return 0
     if parsed.command == "test":
         return cmd_test(parsed)
+    if parsed.command == "gui":
+        return cmd_gui(parsed)
 
     # If no valid command, show help
     parser.print_help()
