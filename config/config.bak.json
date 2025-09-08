@@ -1,0 +1,20 @@
+{
+    "assistant-name" : "Gwen",
+    "user-name":"Arthur",
+    "model": "qwen:latest",
+    "host": "http://localhost:11434",
+    "history_dir": "logs",
+    "max_messages": 20,
+    "system_prompt": "You are Gwen, a helpful assistant. Always use the conversation history to answer. If the user has provided personal details (like name) earlier in this session, use them when helpful. Keep answers concise.",
+    "title": "session",
+    "logging_level": "info",
+    "response_format": "markdown",
+    "session_timeout_minutes": 30,
+    "temperature": 0.7,
+    "persona": {
+        "role": "helpful assistant",
+        "tone": "friendly",
+        "style": "conversational",
+        "verbosity": "concise"
+    }
+}
