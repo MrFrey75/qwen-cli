@@ -1,10 +1,12 @@
-# src/qwen_cli/core/cli.py
 """
 Core CLI logic for Qwen CLI – Phase 0 & 1.
 Handles argument parsing and command execution.
+
+file: src/qwen_cli/core/cli.py
 """
 
 import argparse
+import os
 import sys
 from typing import List
 from .ollama import OllamaInterface  # Relative import
@@ -37,27 +39,47 @@ Examples:
     # `ask` command
     ask_parser = subparsers.add_parser("ask", help="Ask Qwen a question")
     ask_parser.add_argument("prompt", help="The question or prompt to send to Qwen")
+    ask_parser.add_argument(
+        "--model",
+        default=os.environ.get("QWEN_MODEL", "qwen:latest"),
+        help="Model to use (default: env QWEN_MODEL or 'qwen:latest')",
+    )
+    ask_parser.add_argument(
+        "--host",
+        default=os.environ.get("QWEN_OLLAMA_HOST", "http://localhost:11434"),
+        help="Ollama host URL (default: env QWEN_OLLAMA_HOST or http://localhost:11434)",
+    )
+    ask_parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Auto-confirm prompts (e.g., model download)",
+    )
 
     return parser
 
 
 def cmd_ask(args):
     """Handle `qwen ask "prompt"` command."""
-    ollama = OllamaInterface()
+    ollama = OllamaInterface(host=args.host)
 
     if not ollama.is_ollama_running():
         print("❌ Ollama is not running.")
         print("Please start Ollama: https://ollama.com")
         sys.exit(1)
 
-    model = "qwen:latest"
+    model = args.model
     if model not in ollama.list_models():
         print(f"❌ Model '{model}' not found.")
-        confirm = input(f"👉 Would you like to pull '{model}'? (y/N): ")
-        if confirm.lower() != "y":
-            print("❌ Cannot proceed without model.")
-            sys.exit(1)
+        if not args.yes:
+            confirm = input(f"👉 Would you like to pull '{model}'? (y/N): ")
+            if confirm.lower() != "y":
+                print("❌ Cannot proceed without model.")
+                sys.exit(1)
+        else:
+            print("--yes provided; proceeding to pull model.")
         if not ollama.pull_model(model):
+            print("❌ Cannot proceed without model.")
             sys.exit(1)
 
     print(f"\n🤖 Qwen: ", end="", flush=True)

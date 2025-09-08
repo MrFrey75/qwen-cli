@@ -2,6 +2,8 @@
 """
 Setup script for qwen-cli.
 This file is kept for backward compatibility with older tools.
+
+file: setup.py
 """
 
 from setuptools import setup, find_packages
@@ -13,7 +15,6 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="qwen-cli",
-    version="0.1.0",
     description="A local, secure, AI-powered CLI assistant using Qwen via Ollama",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,7 +25,7 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
-        # Add any runtime deps here later
+        'requests'  # Add any runtime deps here later
     ],
     extras_require={
         "test": [
