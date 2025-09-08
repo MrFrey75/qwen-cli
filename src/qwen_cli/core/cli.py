@@ -46,7 +46,7 @@ Examples:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # `ask` command
-    ask_parser = subparsers.add_parser("ask", help="Ask Qwen a question")
+    ask_parser = subparsers.add_parser("ask", help=f"Ask Qwen a question")
     ask_parser.add_argument("prompt", help="The question or prompt to send to Qwen")
     ask_parser.add_argument(
         "--model",

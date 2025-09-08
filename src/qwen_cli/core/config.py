@@ -5,12 +5,23 @@ Stores and loads user settings from a JSON file.
 Default location: ~/.qwen/config.json (overridable by QWEN_CONFIG)
 
 Schema (keys are optional; defaults applied when missing):
+- assistant-name: str (default "Qwen")
+- user-name: str (default "User")
 - model: str (default "qwen:latest")
 - host: str (default "http://localhost:11434")
 - history_dir: str (default ./logs)
 - max_messages: int (default 20)
 - system_prompt: str
 - title: str (default "session")
+- logging-level: str (default "info")
+- response-format: str (default "markdown")
+- session_timeout_minutes: int (default 30)
+- temperature: float (default 0.7)
+- persona.role: str (default "assistant")
+- persona.style: str (default "conversational")
+- persona.verbosity: str (default "concise")
+- persona.formality: str (default "neutral")
+
 """
 
 from __future__ import annotations
