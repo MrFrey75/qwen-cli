@@ -29,19 +29,29 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 - Error if Ollama not running
 - No auto-download without consent
 
+#### Status
+- Complete
+- Tested with Ollama and Qwen
+- Works offline once model is local
+
 ---
 
-### 🔜 Phase 2: Session Context
+### 🟢 Phase 2: Session Context
 **Goal**: Maintain short-term memory in one session.
 
 #### Features
 - `qwen chat` starts interactive mode
-- Remembers prior messages in session
-- In-memory only (no disk)
+- Remembers prior messages in session (in-memory only; no disk)
+- Built-in commands: `/reset` to clear context, `/exit`/`:q` to quit
+- Optional system prompt via `--system` or `QWEN_SYSTEM`
 
 #### Success Criteria
 - 5+ turn conversation works
-- Context resets on exit
+- Context resets on exit or `/reset`
+
+#### Status
+- Complete
+- Tested locally with Ollama and Qwen
 
 ---
 
@@ -57,6 +67,9 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 - All files local
 - Clear data policy
 - User can delete anytime
+- 
+#### Status
+- Planned
 
 ---
 
@@ -71,6 +84,9 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 #### Safety
 - Never auto-execute
 - Always show command first
+- 
+#### Status
+- Planned
 
 ---
 
@@ -82,6 +98,9 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 - Manifest: `plugin.yaml` + Python module
 - Example: `todo`, `git-helper`, `weather`
 - AI can generate & install with approval
+- 
+#### Status
+- Planned
 
 ---
 
@@ -92,6 +111,9 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 - `qwen describe image.png`
 - Works offline
 - Fallback if model not available
+- 
+#### Status
+- Planned
 
 ---
 
@@ -102,6 +124,9 @@ Each phase is **atomic**, **opt-in**, **local-first**, **testable**, and **exten
 - `qwen listen` – start voice input
 - Optional speech output
 - Full offline support
+- 
+#### Status
+- Planned
 
 ---
 

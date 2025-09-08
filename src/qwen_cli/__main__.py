@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Entry point for the Qwen CLI.
+
+file: src/qwen_cli/__main__.py
 """
 
 import sys

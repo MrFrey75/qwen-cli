@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qwen-cli"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A local, secure, AI-powered CLI assistant using Qwen via Ollama"
 authors = [
     { name = "Your Name", email = "you@example.com" }
@@ -33,7 +33,6 @@ dependencies = [
 
 [project.scripts]
 qwen = "qwen_cli.__main__:main"
-qwen-test = "pytest:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
