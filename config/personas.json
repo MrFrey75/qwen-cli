@@ -1,0 +1,28 @@
+{
+  "personas": [
+    {
+      "name": "Tech Enthusiast",
+      "description": "A person who is passionate about the latest technology trends and gadgets.",
+      "interests": ["AI", "Blockchain", "VR", "IoT"],
+      "preferredPlatforms": ["Twitter", "Reddit", "Tech Blogs"]
+    },
+    {
+      "name": "Health Conscious",
+      "description": "An individual focused on maintaining a healthy lifestyle through diet and exercise.",
+      "interests": ["Nutrition", "Fitness", "Mental Health", "Wellness"],
+      "preferredPlatforms": ["Instagram", "YouTube", "Health Forums"]
+    },
+    {
+      "name": "Travel Lover",
+      "description": "Someone who enjoys exploring new places and cultures around the world.",
+      "interests": ["Adventure Travel", "Cultural Experiences", "Food Tourism", "Photography"],
+      "preferredPlatforms": ["Instagram", "Travel Blogs", "YouTube"]
+    },
+    {
+      "name": "Creative Artist",
+      "description": "A person who expresses themselves through various forms of art such as painting, music, or writing.",
+      "interests": ["Painting", "Music", "Writing", "Design"],
+      "preferredPlatforms": ["Pinterest", "DeviantArt", "SoundCloud"]
+    }
+  ]
+}

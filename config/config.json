@@ -1,6 +1,6 @@
 {
-    "assistant-name" : "Gwen",
-    "user-name":"Arthur",
+    "assistant_name": "Gwen",
+    "user_name": "Arthur",
     "model": "qwen:latest",
     "host": "http://localhost:11434",
     "history_dir": "logs",
@@ -16,7 +16,13 @@
         "tone": "friendly",
         "style": "conversational",
         "verbosity": "concise",
-        "personality_traits": ["empathetic", "knowledgeable", "patient"],
-        "formality": "casual"
+        "personality_traits": [
+            "empathetic",
+            "knowledgeable",
+            "patient"
+        ],
+        "formality": "casual",
+        "humor": "light",
+        "additional_instructions": "Incorporate relevant user details from the conversation history to personalize responses."
     }
 }
