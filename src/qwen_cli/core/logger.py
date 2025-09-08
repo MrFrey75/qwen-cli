@@ -6,6 +6,16 @@ Configuration via environment variables:
 - QWEN_LOG_DIR: directory for log files (default: ./logs)
 - QWEN_LOG_LEVEL: logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default: INFO
 - QWEN_LOG_TO_CONSOLE: '1' to enable console logging (default: '1')
+
+USAGE:
+get_logger("qwen.test").debug("hello world")
+# Creates ./logs/qwen-cli.log
+# If QWEN_LOG_DIR is set, creates ./QWEN_LOG_DIR/qwen-cli.log
+# If QWEN_LOG_LEVEL is set, sets the logging level to the specified value
+# If QWEN_LOG_TO_CONSOLE is set, enables console logging
+# If QWEN_LOG_TO_CONSOLE is set to '1', enables console logging
+# If QWEN_LOG_TO_CONSOLE is set to '0', disables console logging
+# If QWEN_LOG_TO_CONSOLE is not set, defaults to '1'
 """
 
 import logging

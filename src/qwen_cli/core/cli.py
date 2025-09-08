@@ -14,6 +14,7 @@ import sys
 from typing import List
 from .ollama import OllamaInterface  # Relative import
 from .logger import get_logger
+from .config import QwenConfig
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -46,12 +47,12 @@ Examples:
     ask_parser.add_argument("prompt", help="The question or prompt to send to Qwen")
     ask_parser.add_argument(
         "--model",
-        default=os.environ.get("QWEN_MODEL", "qwen:latest"),
+        default=os.environ.get("QWEN_MODEL", QwenConfig.load().model),
         help="Model to use (default: env QWEN_MODEL or 'qwen:latest')",
     )
     ask_parser.add_argument(
         "--host",
-        default=os.environ.get("QWEN_OLLAMA_HOST", "http://localhost:11434"),
+        default=os.environ.get("QWEN_OLLAMA_HOST", QwenConfig.load().host),
         help="Ollama host URL (default: env QWEN_OLLAMA_HOST or http://localhost:11434)",
     )
     ask_parser.add_argument(
@@ -65,30 +66,23 @@ Examples:
     chat_parser = subparsers.add_parser("chat", help="Start interactive chat session")
     chat_parser.add_argument(
         "--model",
-        default=os.environ.get("QWEN_MODEL", "qwen:latest"),
+        default=os.environ.get("QWEN_MODEL", QwenConfig.load().model),
         help="Model to use (default: env QWEN_MODEL or 'qwen:latest')",
     )
     chat_parser.add_argument(
         "--host",
-        default=os.environ.get("QWEN_OLLAMA_HOST", "http://localhost:11434"),
+        default=os.environ.get("QWEN_OLLAMA_HOST", QwenConfig.load().host),
         help="Ollama host URL (default: env QWEN_OLLAMA_HOST or http://localhost:11434)",
     )
     chat_parser.add_argument(
         "--system",
-        default=os.environ.get(
-            "QWEN_SYSTEM",
-            (
-                "You are Qwen, a helpful assistant. Always use the conversation history to answer. "
-                "If the user has provided personal details (like name) earlier in this session, "
-                "use them when helpful. Keep answers concise."
-            ),
-        ),
+        default=os.environ.get("QWEN_SYSTEM", QwenConfig.load().system_prompt),
         help="System prompt for the assistant",
     )
     chat_parser.add_argument(
         "--max-messages",
         type=int,
-        default=int(os.environ.get("QWEN_MAX_MESSAGES", "20")),
+        default=int(os.environ.get("QWEN_MAX_MESSAGES", str(QwenConfig.load().max_messages))),
         help="Maximum number of recent messages to keep in memory (excluding system)",
     )
     chat_parser.add_argument(
@@ -108,14 +102,28 @@ Examples:
     )
     chat_parser.add_argument(
         "--history-dir",
-        default=os.environ.get("QWEN_HISTORY_DIR", str(Path.cwd() / "logs")),
+        default=os.environ.get("QWEN_HISTORY_DIR", QwenConfig.load().history_dir),
         help="Directory to store/read chat histories (default: ./logs)",
     )
     chat_parser.add_argument(
         "--title",
-        default=os.environ.get("QWEN_SESSION_TITLE", "session"),
+        default=os.environ.get("QWEN_SESSION_TITLE", QwenConfig.load().title),
         help="Optional session title used in the history filename",
     )
+
+    # `config` command
+    cfg_parser = subparsers.add_parser("config", help="Manage Qwen CLI configuration")
+    cfg_sub = cfg_parser.add_subparsers(dest="config_cmd")
+    cfg_sub.add_parser("path", help="Show config file path")
+    cfg_get = cfg_sub.add_parser("get", help="Get a config value")
+    cfg_get.add_argument("key", help="Config key, e.g. model, host, history_dir, max_messages, system_prompt, title")
+    cfg_set = cfg_sub.add_parser("set", help="Set and save a config value")
+    cfg_set.add_argument("key")
+    cfg_set.add_argument("value")
+    cfg_sub.add_parser("list", help="List all configuration values")
+
+    # `test` command
+    subparsers.add_parser("test", help="Run test suite (pytest -v)")
 
     return parser
 
@@ -159,6 +167,50 @@ def cmd_ask(args):
     finally:
         print()  # Newline at end
 
+
+def cmd_config(args):
+    cfg = QwenConfig.load()
+    if args.config_cmd == "path":
+        print(cfg.path)
+        return
+    if args.config_cmd == "get":
+        val = getattr(cfg, args.key, None)
+        if val is None:
+            print("")
+        else:
+            print(val)
+        return
+    if args.config_cmd == "set":
+        key = args.key
+        value = args.value
+        # Basic casting for known fields
+        if key == "max_messages":
+            try:
+                value = int(value)
+            except Exception:
+                print("❌ max_messages must be an integer")
+                sys.exit(2)
+        setattr(cfg, key, value)
+        saved = cfg.save()
+        print(f"✅ Saved {key} to {saved}")
+        return
+    if args.config_cmd == "list":
+        import json as _json
+        print(_json.dumps(cfg.__dict__, indent=2))
+        return
+    # default: show help
+    print("Use: qwen config [path|get|set|list]")
+
+
+def cmd_test(args):
+    """Run pytest -v and stream results to stdout."""
+    import subprocess
+    try:
+        result = subprocess.run([sys.executable, "-m", "pytest", "-v"], check=False)
+        return result.returncode
+    except FileNotFoundError:
+        print("❌ pytest not found. Install with: pip install pytest")
+        return 1
 
 def cmd_chat(args):
     """Handle `qwen chat` interactive session with in-memory context."""
@@ -226,13 +278,55 @@ def cmd_chat(args):
             print(f"⚠️  Session not found: {candidate}")
 
     # Start log file if enabled
-    if not args.no_log:
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        # Sanitize title for filename
-        safe_title = "".join(c if c.isalnum() or c in ("-", "_") else "-" for c in (args.title or "session")).strip("-") or "session"
-        log_path = history_dir / f"{safe_title}-{timestamp}.jsonl"
+    # New scheme: <title>-YYYY-MM-DD-[i].jsonl and roll to next i when file exceeds max bytes
+    max_bytes = int(os.environ.get("QWEN_HISTORY_MAX_BYTES", str(1 * 1024 * 1024)))  # 1MB default
+    safe_title = "".join(c if c.isalnum() or c in ("-", "_") else "-" for c in (args.title or "session")).strip("-") or "session"
+    date_str = datetime.now().strftime("%Y-%m-%d")
+
+    def _next_index(start_at: int = 1) -> int:
+        # Determine next available index by scanning existing files
+        existing = list(history_dir.glob(f"{safe_title}-{date_str}-*.jsonl"))
+        max_i = 0
+        for p in existing:
+            try:
+                stem = p.stem  # e.g., title-YYYY-MM-DD-2
+                i_str = stem.split("-")[-1]
+                i_val = int(i_str)
+                if i_val > max_i:
+                    max_i = i_val
+            except Exception:
+                continue
+        return max(max_i, start_at)
+
+    def _open_log(index: int):
+        path = history_dir / f"{safe_title}-{date_str}-{index}.jsonl"
+        fp = path.open("a", encoding="utf-8")
+        return fp, path
+
+    def _maybe_rotate():
+        nonlocal log_fp, log_path
+        if log_fp is None:
+            return
         try:
-            log_fp = log_path.open("a", encoding="utf-8")
+            size = log_path.stat().st_size
+            if size >= max_bytes:
+                # roll to next index
+                try:
+                    current_i = int(log_path.stem.split("-")[-1])
+                except Exception:
+                    current_i = _next_index()
+                log_fp.close()
+                next_i = current_i + 1
+                new_fp, new_path = _open_log(next_i)
+                log_fp, log_path = new_fp, new_path
+                print(f"📝 Rolled log to: {log_path}")
+        except Exception:
+            pass
+
+    if not args.no_log:
+        try:
+            start_i = _next_index(1)
+            log_fp, log_path = _open_log(start_i)
             # Log initial system prompt
             log_fp.write(json.dumps({"role": "system", "content": args.system}) + "\n")
             log_fp.flush()
@@ -275,6 +369,7 @@ def cmd_chat(args):
         messages.append({"role": "user", "content": user_input})
         if log_fp is not None:
             try:
+                _maybe_rotate()
                 log_fp.write(json.dumps({"role": "user", "content": user_input}) + "\n")
                 log_fp.flush()
             except Exception:
@@ -309,6 +404,7 @@ def cmd_chat(args):
         messages.append({"role": "assistant", "content": assistant_content})
         if log_fp is not None:
             try:
+                _maybe_rotate()
                 log_fp.write(json.dumps({"role": "assistant", "content": assistant_content}) + "\n")
                 log_fp.flush()
             except Exception:
@@ -355,6 +451,11 @@ def main(args: List[str] = None) -> int:
     if parsed.command == "chat":
         cmd_chat(parsed)
         return 0
+    if parsed.command == "config":
+        cmd_config(parsed)
+        return 0
+    if parsed.command == "test":
+        return cmd_test(parsed)
 
     # If no valid command, show help
     parser.print_help()
