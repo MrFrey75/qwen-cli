@@ -3,9 +3,23 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import spacy
 
 from qwen_cli.core.logger import get_logger
 from qwen_cli.core.ollama import OllamaInterface
+
+# NOTE: This assumes you have a new file `chat_logger.py` with the ChatLogger class.
+from qwen_cli.core.chat_logger import ChatLogger
+
+
+# Lazy load spaCy model for Named Entity Recognition (NER)
+# The 'en_core_web_sm' model can identify entities like 'PERSON' and 'GPE' (geopolitical entity).
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    print("❌ spaCy model 'en_core_web_sm' not found. Please install it with:")
+    print("python -m spacy download en_core_web_sm")
+    sys.exit(1)
 
 
 def cmd_chat(args):
@@ -40,11 +54,17 @@ def cmd_chat(args):
     messages = [{"role": "system", "content": args.system}]
     session_facts = {}
 
-    # Prepare logging and/or preloading
-    history_dir = Path(args.history_dir)
-    history_dir.mkdir(parents=True, exist_ok=True)
-    log_fp = None
-    log_path = None
+    # Prepare logging
+    chat_logger = None
+    if not args.no_log:
+        try:
+            history_dir = Path(args.history_dir)
+            history_dir.mkdir(parents=True, exist_ok=True)
+            chat_logger = ChatLogger(history_dir, args.title)
+            chat_logger.log_message("system", args.system)
+        except Exception as e:
+            print(f"⚠️  Could not open log file: {e}")
+            chat_logger = None
 
     # Load prior session if provided
     if args.session:
@@ -72,61 +92,6 @@ def cmd_chat(args):
         else:
             print(f"⚠️  Session not found: {candidate}")
 
-    # Start log file if enabled
-    # New scheme: <title>-YYYY-MM-DD-[i].jsonl and roll to next i when file exceeds max bytes
-    max_bytes = int(os.environ.get("QWEN_HISTORY_MAX_BYTES", str(1 * 1024 * 1024)))  # 1MB default
-    safe_title = "".join(c if c.isalnum() or c in ("-", "_") else "-" for c in (args.title or "session")).strip("-") or "session"
-    date_str = datetime.now().strftime("%Y-%m-%d")
-
-    def _next_index(start_at: int = 1) -> int:
-        existing = list(history_dir.glob(f"{safe_title}-{date_str}-*.jsonl"))
-        max_i = 0
-        for p in existing:
-            try:
-                stem = p.stem
-                i_str = stem.split("-")[-1]
-                i_val = int(i_str)
-                if i_val > max_i:
-                    max_i = i_val
-            except Exception:
-                continue
-        return max(max_i, start_at)
-
-    def _open_log(index: int):
-        path = history_dir / f"{safe_title}-{date_str}-{index}.jsonl"
-        fp = path.open("a", encoding="utf-8")
-        return fp, path
-
-    def _maybe_rotate():
-        nonlocal log_fp, log_path
-        if log_fp is None:
-            return
-        try:
-            size = log_path.stat().st_size
-            if size >= max_bytes:
-                try:
-                    current_i = int(log_path.stem.split("-")[-1])
-                except Exception:
-                    current_i = _next_index()
-                log_fp.close()
-                next_i = current_i + 1
-                new_fp, new_path = _open_log(next_i)
-                log_fp, log_path = new_fp, new_path
-                print(f"📝 Rolled log to: {log_path}")
-        except Exception:
-            pass
-
-    if not args.no_log:
-        try:
-            start_i = _next_index(1)
-            log_fp, log_path = _open_log(start_i)
-            log_fp.write(json.dumps({"role": "system", "content": args.system}) + "\n")
-            log_fp.flush()
-            print(f"📝 Logging to: {log_path}")
-        except Exception as e:
-            print(f"⚠️  Could not open log file: {e}")
-            log_fp = None
-
     while True:
         try:
             user_input = input("\n🟢 You: ")
@@ -147,24 +112,18 @@ def cmd_chat(args):
             log.info("Context reset by user")
             continue
 
-        # Lightweight fact extraction (in-memory only)
-        text_lower = user_input.strip().lower()
-        import re as _re
-        m = _re.search(r"\bmy\s+name\s+is\s+([a-zA-Z][a-zA-Z\-']*)", text_lower)
-        if m:
-            start, end = m.span(1)
-            captured = user_input[start:end]
-            session_facts["name"] = captured.strip()
-            log.debug("Captured user name: %s", session_facts["name"])
+        # Use spaCy for more robust fact extraction.
+        doc = nlp(user_input)
+        for ent in doc.ents:
+            # spaCy's NER can identify various entities like PERSON, GPE (countries, cities, states), and LOC (non-GPE locations).
+            if ent.label_ == "PERSON":
+                session_facts["name"] = ent.text
+            elif ent.label_ in ("GPE", "LOC"):
+                session_facts["location"] = ent.text
 
         messages.append({"role": "user", "content": user_input})
-        if log_fp is not None:
-            try:
-                _maybe_rotate()
-                log_fp.write(json.dumps({"role": "user", "content": user_input}) + "\n")
-                log_fp.flush()
-            except Exception:
-                pass
+        if chat_logger:
+            chat_logger.log_message("user", user_input)
 
         print("🤖 Qwen: ", end="", flush=True)
         try:
@@ -174,6 +133,8 @@ def cmd_chat(args):
                 facts_lines = []
                 if "name" in session_facts:
                     facts_lines.append(f"User name: {session_facts['name']}")
+                if "location" in session_facts:
+                    facts_lines.append(f"User location: {session_facts['location']}")
                 if facts_lines:
                     augmented.append({
                         "role": "system",
@@ -191,17 +152,10 @@ def cmd_chat(args):
             continue
 
         messages.append({"role": "assistant", "content": assistant_content})
-        if log_fp is not None:
-            try:
-                _maybe_rotate()
-                log_fp.write(json.dumps({"role": "assistant", "content": assistant_content}) + "\n")
-                log_fp.flush()
-            except Exception:
-                pass
+        if chat_logger:
+            chat_logger.log_message("assistant", assistant_content)
 
         max_keep = max(0, int(args.max_messages))
         if len(messages) > 1 + max_keep:
             tail = messages[-max_keep:] if max_keep > 0 else []
             messages = [messages[0]] + tail
-
-

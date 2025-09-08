@@ -49,6 +49,9 @@ qwen --help
 qwen --version
 qwen ask "What is Python?"
 qwen chat
+qwen config list
+qwen test
+qwen gui
 ```
 
 Options:
@@ -62,11 +65,18 @@ Chat context and history:
 - In-memory context is preserved during the session and used for replies.
 - Name extraction: saying "my name is Alice" helps the model remember in-session.
 - Persistent history (opt-in):
-  - Log a session: `qwen chat --title "project-notes"` (saved to `./logs/project-notes-YYYY-...jsonl`)
+  - Log a session: `qwen chat --title "project-notes"`
+    - Saved to `./logs/project-notes-YYYY-MM-DD-[i].jsonl` (auto-rotates when large)
   - Change directory: `--history-dir ./logs`
   - Disable logging: `--no-log`
   - Load prior session: `--session ./logs/project-notes-...jsonl`
   - History size cap: `--max-messages 50` (or `QWEN_MAX_MESSAGES`)
+
+Configuration:
+
+- Config file: `./config/config.json` (auto-created on first run). Override with `QWEN_CONFIG`.
+- Inspect: `qwen config list` or `qwen config path`
+- Get/set: `qwen config get model`, `qwen config set model qwen:latest`
 
 Interactive chat tips:
 
@@ -92,3 +102,8 @@ Interactive chat tips:
   - `QWEN_LOG_DIR` (default `./logs`)
   - `QWEN_LOG_LEVEL` (`INFO`, `DEBUG`, ...)
   - `QWEN_LOG_TO_CONSOLE` (`1`/`0`)
+
+## Testing and GUI
+
+- Run tests: `qwen test` (executes `pytest -v`)
+- Experimental GUI: `qwen gui` (requires `PyQt5`)
